@@ -6,22 +6,27 @@ import Link from 'next/link'
 import { Item } from '@/types'
 
 const categoryLabel: Record<string, string> = {
-  consumable: '消耗品',
+  facility: '施設備品',
   sellable: '販売品',
-  equipment: '備品',
+  aroma: 'アロマ',
+  diaper: 'おむつ',
 }
 
 const categoryColor: Record<string, string> = {
-  consumable: '#2d5a8e',
+  facility: '#2d5a8e',
   sellable: '#3d6b47',
-  equipment: '#7a6b4a',
+  aroma: '#7a4a8e',
+  diaper: '#8e5a2d',
 }
+
+type SortKey = 'no' | 'name' | 'stock'
 
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('all')
+  const [sortKey, setSortKey] = useState<SortKey>('no')
   const supabase = createClient()
 
   useEffect(() => {
@@ -31,11 +36,17 @@ export default function ItemsPage() {
     })
   }, [])
 
-  const filtered = items.filter(item => {
-    const matchCat = category === 'all' || item.category === category
-    const matchSearch = item.name.toLowerCase().includes(search.toLowerCase())
-    return matchCat && matchSearch
-  })
+  const filtered = items
+    .filter(item => {
+      const matchCat = category === 'all' || item.category === category
+      const matchSearch = item.name.toLowerCase().includes(search.toLowerCase())
+      return matchCat && matchSearch
+    })
+    .sort((a, b) => {
+      if (sortKey === 'name') return a.name.localeCompare(b.name, 'ja')
+      if (sortKey === 'stock') return a.current_stock - b.current_stock
+      return a.no - b.no
+    })
 
   if (loading) return <div className="py-20 text-center text-sm" style={{ color: '#6b6b6b' }}>読み込み中...</div>
 
@@ -68,12 +79,13 @@ export default function ItemsPage() {
       />
 
       {/* Category filter */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+      <div className="flex gap-2 mb-2 overflow-x-auto pb-1">
         {[
           { value: 'all', label: 'すべて' },
-          { value: 'consumable', label: '消耗品' },
+          { value: 'facility', label: '施設備品' },
           { value: 'sellable', label: '販売品' },
-          { value: 'equipment', label: '備品' },
+          { value: 'aroma', label: 'アロマ' },
+          { value: 'diaper', label: 'おむつ' },
         ].map(opt => (
           <button key={opt.value} onClick={() => setCategory(opt.value)}
             className="px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors"
@@ -81,6 +93,25 @@ export default function ItemsPage() {
               background: category === opt.value ? '#1e3a5f' : '#fff',
               color: category === opt.value ? '#fff' : '#6b6b6b',
               border: '1px solid ' + (category === opt.value ? '#1e3a5f' : '#e8e6e3'),
+            }}>
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Sort */}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+        {([
+          { key: 'no', label: 'No順' },
+          { key: 'name', label: '名前順' },
+          { key: 'stock', label: '在庫数順' },
+        ] as { key: SortKey; label: string }[]).map(opt => (
+          <button key={opt.key} onClick={() => setSortKey(opt.key)}
+            className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors"
+            style={{
+              background: sortKey === opt.key ? '#4a7c59' : '#fff',
+              color: sortKey === opt.key ? '#fff' : '#6b6b6b',
+              border: '1px solid ' + (sortKey === opt.key ? '#4a7c59' : '#e8e6e3'),
             }}>
             {opt.label}
           </button>

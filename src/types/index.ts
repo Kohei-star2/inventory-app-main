@@ -1,4 +1,4 @@
-export type ItemCategory = 'facility' | 'sellable' | 'aroma'
+export type ItemCategory = 'facility' | 'sellable' | 'aroma' | 'diaper'
 
 export interface Item {
   id: string

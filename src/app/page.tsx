@@ -10,12 +10,16 @@ const CATEGORY_LABELS: Record<string, string> = {
   facility: '施設備品',
   sellable: '販売品',
   aroma: 'アロマ',
+  diaper: 'おむつ',
 }
+
+type SortKey = 'no' | 'name' | 'stock'
 
 export default function HomePage() {
   const [items, setItems] = useState<Item[]>([])
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<string>('all')
+  const [sortKey, setSortKey] = useState<SortKey>('no')
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
@@ -26,11 +30,17 @@ export default function HomePage() {
     })
   }, [])
 
-  const filtered = items.filter(item => {
-    const matchSearch = item.name.toLowerCase().includes(search.toLowerCase())
-    const matchCat = category === 'all' || item.category === category
-    return matchSearch && matchCat
-  })
+  const filtered = items
+    .filter(item => {
+      const matchSearch = item.name.toLowerCase().includes(search.toLowerCase())
+      const matchCat = category === 'all' || item.category === category
+      return matchSearch && matchCat
+    })
+    .sort((a, b) => {
+      if (sortKey === 'name') return a.name.localeCompare(b.name, 'ja')
+      if (sortKey === 'stock') return a.current_stock - b.current_stock
+      return a.no - b.no
+    })
 
   const lowStock = items.filter(i => i.min_stock != null && i.current_stock <= i.min_stock)
 
@@ -70,7 +80,7 @@ export default function HomePage() {
           style={{ background: '#fff', border: '1px solid #e8e6e3', color: '#2a2a2a' }}
         />
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {['all', 'facility', 'sellable', 'aroma'].map(cat => (
+          {['all', 'facility', 'sellable', 'aroma', 'diaper'].map(cat => (
             <button key={cat}
               onClick={() => setCategory(cat)}
               className="flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-medium transition-colors"
@@ -80,6 +90,24 @@ export default function HomePage() {
                 border: '1px solid ' + (category === cat ? '#1e3a5f' : '#e8e6e3'),
               }}>
               {cat === 'all' ? 'すべて' : CATEGORY_LABELS[cat]}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {([
+            { key: 'no', label: 'No順' },
+            { key: 'name', label: '名前順' },
+            { key: 'stock', label: '在庫数順' },
+          ] as { key: SortKey; label: string }[]).map(opt => (
+            <button key={opt.key}
+              onClick={() => setSortKey(opt.key)}
+              className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors"
+              style={{
+                background: sortKey === opt.key ? '#4a7c59' : '#fff',
+                color: sortKey === opt.key ? '#fff' : '#6b6b6b',
+                border: '1px solid ' + (sortKey === opt.key ? '#4a7c59' : '#e8e6e3'),
+              }}>
+              {opt.label}
             </button>
           ))}
         </div>

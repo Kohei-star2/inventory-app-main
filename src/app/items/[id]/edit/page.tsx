@@ -122,6 +122,7 @@ export default function EditItemPage() {
               { value: 'facility', label: '施設備品' },
               { value: 'sellable', label: '販売品' },
               { value: 'aroma', label: 'アロマ' },
+              { value: 'diaper', label: 'おむつ' },
             ].map(opt => (
               <button type="button" key={opt.value}
                 onClick={() => set('category', opt.value)}
