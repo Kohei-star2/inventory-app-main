@@ -22,39 +22,70 @@ export default function MonthlyExport() {
     }
     setLoading(true)
     const start = new Date(startDate).toISOString()
-    const end = new Date(new Date(endDate).getTime() + 86400000).toISOString() // 終了日を含む
+    const end = new Date(new Date(endDate).getTime() + 86400000).toISOString()
 
-    const { data } = await supabase
-      .from('stock_transactions')
-      .select('transaction_date, type, quantity, resident_name, staff_name, items(name, purchase_price)')
-      .gte('transaction_date', start)
-      .lt('transaction_date', end)
-      .order('transaction_date')
+    const [{ data: items }, { data: txData }] = await Promise.all([
+      supabase
+        .from('items')
+        .select('id, no, name, sell_unit, sell_price')
+        .not('sell_price', 'is', null)
+        .order('no'),
+      supabase
+        .from('stock_transactions')
+        .select('item_id, quantity, resident_name')
+        .eq('type', 'out')
+        .not('resident_name', 'is', null)
+        .gte('transaction_date', start)
+        .lt('transaction_date', end),
+    ])
 
-    if (!data || data.length === 0) {
-      alert('該当期間のデータがありません')
+    if (!items || items.length === 0) {
+      alert('販売品がありません')
       setLoading(false)
       return
     }
 
-    const rows = [
-      ['日付', '品目名', '種別', '数量', '利用者', '担当職員', '単価（円）', '金額（円）'],
-      ...data.map(tx => {
-        const item = tx.items as any
-        const price = item?.purchase_price ?? 0
-        const date = new Date(tx.transaction_date).toLocaleDateString('ja-JP')
-        const type = tx.type === 'in' ? '入庫' : '使用'
-        const amount = tx.type === 'out' ? tx.quantity * price : ''
-        return [date, item?.name ?? '', type, tx.quantity, tx.resident_name ?? '', tx.staff_name ?? '', price, amount]
-      }),
-    ]
+    // 利用者ごと・商品ごとの数量集計
+    const salesMap: Record<string, Record<string, number>> = {}
+    const residentSet = new Set<string>()
+    for (const tx of txData ?? []) {
+      if (!tx.resident_name) continue
+      residentSet.add(tx.resident_name)
+      if (!salesMap[tx.item_id]) salesMap[tx.item_id] = {}
+      salesMap[tx.item_id][tx.resident_name] = (salesMap[tx.item_id][tx.resident_name] ?? 0) + tx.quantity
+    }
+    const residents = Array.from(residentSet)
+
+    const month = new Date(startDate).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })
+    const rows: (string | number)[][] = []
+
+    // 1行目：タイトル
+    rows.push([`衛生材料等の販売価格一覧（${month}）`])
+    // 2行目：ヘッダー
+    rows.push(['名称', '売却単位', '販売価格', ...residents])
+    // 商品行
+    for (const item of items) {
+      rows.push([
+        item.name,
+        item.sell_unit ?? '',
+        `¥${(item.sell_price ?? 0).toLocaleString()}`,
+        ...residents.map(r => salesMap[item.id]?.[r] ?? ''),
+      ])
+    }
+    // 合計行
+    rows.push([
+      '', '', '合計',
+      ...residents.map(r =>
+        items.reduce((sum, item) => sum + (salesMap[item.id]?.[r] ?? 0) * (item.sell_price ?? 0), 0)
+      ),
+    ])
 
     const csv = '\uFEFF' + rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `在庫レポート_${startDate}_${endDate}.csv`
+    a.download = `販売価格一覧_${startDate}_${endDate}.csv`
     a.click()
     URL.revokeObjectURL(url)
     setLoading(false)
@@ -88,7 +119,7 @@ export default function MonthlyExport() {
         </button>
       </div>
       <p className="text-xs" style={{ color: '#9b9b9b' }}>
-        日付・品目・種別・数量・利用者・職員・単価・金額を含みます
+        品名・売却単位・販売価格・利用者別数量・合計を含みます
       </p>
     </div>
   )
