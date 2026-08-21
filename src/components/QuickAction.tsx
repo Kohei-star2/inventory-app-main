@@ -3,15 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Item } from '@/types'
-
-const RESIDENTS = [
-  '土谷 妃', '松岡 文子', '田中 数人', '田島 寛治',
-  '安田 幸子', '齋藤 勢津子', '安永 和子', '犬束 紀行', '業務利用',
-]
-
-const STAFF = [
-  '山下亮', '山下敦子', '角田', '内田', '武内', '樋口', '舩津', '中尾', '野田', '三原',
-]
+import { usePeople } from '@/lib/people'
 
 interface Props {
   item: Item
@@ -26,6 +18,7 @@ export default function QuickAction({ item, onDone }: Props) {
   const [staffName, setStaffName] = useState('')
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
+  const { staff, residents } = usePeople()
 
   const perBox = item.items_per_box ?? 1
   const inQty = boxes * perBox
@@ -104,7 +97,7 @@ export default function QuickAction({ item, onDone }: Props) {
             className="w-full rounded-lg px-3 py-2 text-sm border-0 outline-none"
             style={{ background: '#fff', color: residentName ? '#2a2a2a' : '#9b9b9b' }}>
             <option value="">利用者を選択</option>
-            {RESIDENTS.map(r => <option key={r} value={r}>{r}</option>)}
+            {residents.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
           </select>
           <select
             value={staffName}
@@ -112,7 +105,7 @@ export default function QuickAction({ item, onDone }: Props) {
             className="w-full rounded-lg px-3 py-2 text-sm border-0 outline-none"
             style={{ background: '#fff', color: staffName ? '#2a2a2a' : '#9b9b9b' }}>
             <option value="">職員を選択</option>
-            {STAFF.map(s => <option key={s} value={s}>{s}</option>)}
+            {staff.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
           </select>
           <button onClick={handleSubmit} disabled={loading}
             className="w-full py-2.5 rounded-lg text-sm font-bold transition-opacity disabled:opacity-50"

@@ -48,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               { href: '/import', icon: '📷', label: '取込' },
               { href: '/reports', icon: '≡', label: 'レポート' },
               { href: '/items', icon: '⊕', label: '品目管理' },
+              { href: '/people', icon: '☺', label: '名簿' },
             ].map(({ href, icon, label }) => (
               <a key={href} href={href}
                 className="flex-1 flex flex-col items-center py-3 gap-0.5 text-xs transition-colors"

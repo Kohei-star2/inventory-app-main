@@ -3,11 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Item } from '@/types'
-
-const RESIDENTS = [
-  '土谷 妃', '松岡 文子', '田中 数人', '田島 寛治',
-  '安田 幸子', '齋藤 勢津子', '安永 和子', '犬束 紀行',
-]
+import { usePeople } from '@/lib/people'
 
 type ExtractedRow = {
   rawName: string
@@ -31,6 +27,7 @@ export default function ImportPage() {
   const [saving, setSaving] = useState(false)
   const [savedCount, setSavedCount] = useState(0)
   const supabase = createClient()
+  const { residents } = usePeople()
 
   useEffect(() => {
     supabase.from('items').select('*').order('no').then(({ data }) => {
@@ -102,7 +99,7 @@ export default function ImportPage() {
               className="w-full rounded-xl px-4 py-3 text-base border-0 outline-none"
               style={{ background: '#f5f4f2', color: resident ? '#2a2a2a' : '#9b9b9b' }}>
               <option value="">利用者を選択してください</option>
-              {RESIDENTS.map(r => <option key={r} value={r}>{r}</option>)}
+              {residents.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
             </select>
           </div>
 

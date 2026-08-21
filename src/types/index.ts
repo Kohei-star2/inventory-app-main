@@ -42,3 +42,12 @@ export interface InventoryRecord {
   created_at: string
   items?: Item
 }
+
+export interface Person {
+  id: string
+  name: string
+  sort_order: number
+  created_at: string
+}
+
+export type PersonKind = 'staff' | 'residents'
