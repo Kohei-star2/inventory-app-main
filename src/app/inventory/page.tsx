@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Item } from '@/types'
+import { buildInventoryCsv } from '@/lib/inventoryCsv'
 
 export default function InventoryPage() {
   const [items, setItems] = useState<Item[]>([])
@@ -46,6 +47,18 @@ export default function InventoryPage() {
     setDone(true)
   }
 
+  function handleExportCsv() {
+    const today = new Date().toLocaleDateString('sv-SE')
+    const csv = buildInventoryCsv(items, today)
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `棚卸し表_${today}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   if (loading) return <div className="py-20 text-center text-sm" style={{ color: '#6b6b6b' }}>読み込み中...</div>
 
   if (done) return (
@@ -60,7 +73,14 @@ export default function InventoryPage() {
 
   return (
     <div>
-      <h2 className="text-base font-semibold mb-1" style={{ color: '#1e3a5f' }}>棚卸し</h2>
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-base font-semibold" style={{ color: '#1e3a5f' }}>棚卸し</h2>
+        <button onClick={handleExportCsv}
+          className="px-3 py-1.5 rounded-lg text-xs font-bold"
+          style={{ background: '#f0eeec', color: '#1e3a5f' }}>
+          ⬇ 印刷用CSV
+        </button>
+      </div>
       <p className="text-xs mb-4" style={{ color: '#6b6b6b' }}>実際の在庫数を確認し、数値を修正してください。</p>
 
       <div className="space-y-2 mb-5">
