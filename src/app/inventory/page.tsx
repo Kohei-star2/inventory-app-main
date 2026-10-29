@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Item } from '@/types'
+import { buildInventoryCsv } from '@/lib/inventoryCsv'
 
 export default function InventoryPage() {
   const [items, setItems] = useState<Item[]>([])
@@ -48,19 +49,7 @@ export default function InventoryPage() {
 
   function handleExportCsv() {
     const today = new Date().toLocaleDateString('sv-SE')
-    const rows: (string | number)[][] = [
-      [`棚卸し表（${today}）`],
-      ['No', '品名', '保管場所', '購入単位', 'システム在庫', '実数', '差異', '確認', '備考'],
-      ...items.map(item => [
-        item.no,
-        item.name,
-        item.storage_location ?? '',
-        item.purchase_unit ?? '',
-        item.current_stock,
-        '', '', '', '',
-      ]),
-    ]
-    const csv = '\uFEFF' + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\r\n')
+    const csv = buildInventoryCsv(items, today)
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
